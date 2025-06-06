@@ -91,25 +91,12 @@
             margin-bottom: 2rem;
         }
 
-        .logo-container::before {
-            content: '';
-            position: absolute;
-            top: -20px;
-            left: -20px;
-            right: -20px;
-            bottom: -20px;
-            background: var(--glass-bg);
-            border-radius: 50%;
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            z-index: -1;
-        }
+        .logo-container::before { border-radius: 20px; /* Changed from 50% */ }
 
         .logo-img {
             width: 200px;
-            height: 266px;
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
-            animation: float 6s ease-in-out infinite;
+        height: 200px; /* Change from 266px */
+        object-fit: contain; /* Keeps image proportions */
         }
 
         @keyframes float {
@@ -344,7 +331,7 @@
         <div class="container">
             <div class="hero-content">
                 <div class="logo-container">
-                    <img src="../logo.png" alt="No Pore Decisions Logo" class="logo-img">
+                    <img src="https://raw.githubusercontent.com/AlbertMeza/NoPoreDecision/main/logo.png" alt="No Pore Decisions Logo" class="logo-img">
                 </div>
                 <h1 class="hero-title">No Pore Decisions</h1>
                 <p class="hero-subtitle">"Your skin deserves the best choices"</p>

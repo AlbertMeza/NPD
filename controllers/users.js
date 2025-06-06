@@ -1,3 +1,4 @@
+// Controllers/user.js - Enhanced with modern styling
 const db = require('../dbConfig');
 
 /**
@@ -376,44 +377,41 @@ const getEnhancedHTMLTemplate = (title, content) => {
 };
 
 /**
- * getProductDetails - Fetches product data based on product name/purpose
+ * getUserByName (Enhanced) - Fetches user data and routines with modern styling
  */
-const getProductDetails = (req, res) => {
-    const productName = req.query.productName; // Expecting productName from query parameters
+const getUserByName = (req, res) => {
+    const userName = req.query.userName;
 
-    if (!productName) {
-        const errorContent = `
-            <div class="container">
-                <div class="no-results">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h3>Missing Information</h3>
-                    <p>A product name or purpose is required for the search.</p>
-                    <a href="/productLogs.html" class="btn-primary-modern btn-modern">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Product Search
-                    </a>
-                </div>
-            </div>
-        `;
-        return res.status(400).send(getEnhancedHTMLTemplate('Error', errorContent));
-    }
-
-    const query = `
+    const userQuery = `
         SELECT
-            ProductID, Purpose, ExpDate
-        FROM Product_Logs
-        WHERE Purpose LIKE ?
+            UserID, Name, Email, Join_Date
+        FROM Users
+        WHERE Name LIKE ?
     `;
 
-    db.query(query, [`%${productName}%`], (err, productResults) => {
+    const routinesQuery = `
+        SELECT
+            r.Cleanser,
+            r.Toner,
+            r.Serum,
+            r.Moisturizer,
+            r.Sunscreen
+        FROM Routines r
+        JOIN Users u ON r.UserID = u.UserID
+        WHERE u.Name LIKE ?
+    `;
+
+    // Execute user query first
+    db.query(userQuery, [`%${userName}%`], (err, userResults) => {
         if (err) {
-            console.error("Error fetching product data:", err);
+            console.error("Error fetching user data:", err);
             const errorContent = `
                 <div class="container">
                     <div class="no-results">
                         <i class="fas fa-exclamation-triangle"></i>
                         <h3>Database Error</h3>
-                        <p>Unable to search for products at this time.</p>
-                        <a href="/productlogs.html" class="btn-primary-modern btn-modern">
+                        <p>Unable to search for users at this time.</p>
+                        <a href="/userSearch.html" class="btn-primary-modern btn-modern">
                             <i class="fas fa-arrow-left me-2"></i>Back to Search
                         </a>
                     </div>
@@ -422,90 +420,203 @@ const getProductDetails = (req, res) => {
             return res.status(500).send(getEnhancedHTMLTemplate('Error', errorContent));
         }
 
-        let content = `
-        <div class="container">
-            <h3><i class="fas fa-search me-3"></i>Search Results for "${productName}"</h3>
-        `;
-
-        if (productResults.length === 0) {
-            content += `
-            <div class="alert alert-warning">
-                <i class="fas fa-box-open me-2"></i>
-                <strong>No products found</strong> matching the search term "${productName}".
+        // If no users found, return early
+        if (userResults.length === 0) {
+            let content = `
+            <div class="container">
+                <h3><i class="fas fa-search me-3"></i>Search Results for "${userName}"</h3>
+                <div class="alert alert-warning">
+                    <i class="fas fa-user-slash me-2"></i>
+                    <strong>No users found</strong> matching the search term "${userName}".
+                </div>
+                <div class="mt-4 text-center">
+                    <a href="/userSearch.html" class="btn-primary-modern btn-modern me-2">
+                        <i class="fas fa-search me-2"></i>New Search
+                    </a>
+                    <a href="/allusers" class="btn-secondary-modern btn-modern">
+                        <i class="fas fa-users me-2"></i>View All Users
+                    </a>
+                </div>
             </div>
             `;
-        } else {
-            content += `
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle me-2"></i>
-                Found ${productResults.length} product(s) matching "${productName}":
-            </div>
-            <div class="table-container">
-                <table class="table table-striped">
-                    <thead class="table-dark">
-                        <tr>
-                            <th><i class="fas fa-id-badge me-2"></i>Product ID</th>
-                            <th><i class="fas fa-box me-2"></i>Purpose</th>
-                            <th><i class="fas fa-calendar-alt me-2"></i>Expiration Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            return res.send(getEnhancedHTMLTemplate('User Search Results', content));
+        }
+
+        // Execute routines query
+        db.query(routinesQuery, [`%${userName}%`], (err, routineResults) => {
+            if (err) {
+                console.error("Error fetching routine data:", err);
+                // Continue without routines data
+                routineResults = [];
+            }
+
+            // Generate enhanced HTML response
+            let content = `
+            <div class="container">
+                <h3><i class="fas fa-search me-3"></i>Search Results for "${userName}"</h3>
+                
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Found ${userResults.length} user(s) matching "${userName}".
+                </div>
+
+                <!-- User Information Section -->
+                <div class="mb-4">
+                    <h5><i class="fas fa-user me-2"></i>User Information</h5>
+                    <div class="table-container">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="fas fa-user me-2"></i>Name</th>
+                                    <th><i class="fas fa-envelope me-2"></i>Email</th>
+                                    <th><i class="fas fa-calendar me-2"></i>Join Date</th>
+                                    <th><i class="fas fa-id-badge me-2"></i>User ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
             `;
 
-            productResults.forEach(product => {
+            userResults.forEach(user => {
                 content += `
                 <tr>
-                    <td><span class="badge">${product.ProductID}</span></td>
-                    <td><strong>${product.Purpose}</strong></td>
-                    <td>${product.ExpDate ? new Date(product.ExpDate).toLocaleDateString('en-US', {
+                    <td><strong>${user.Name}</strong></td>
+                    <td>${user.Email}</td>
+                    <td>${user.Join_Date ? new Date(user.Join_Date).toLocaleDateString('en-US', {
                         year: 'numeric',
-                        month: 'long',
+                        month: 'long', 
                         day: 'numeric'
                     }) : 'N/A'}</td>
+                    <td>
+                        <span class="badge">${user.UserID}</span>
+                    </td>
                 </tr>
                 `;
             });
 
             content += `
-                    </tbody>
-                </table>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Skincare Routines Section -->
+                <div class="mb-4">
+                    <h5><i class="fas fa-spa me-2"></i>Skincare Routines</h5>
+            `;
+
+            if (routineResults.length === 0) {
+                content += `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No skincare routines found for users matching "${userName}".
+                    </div>
+                `;
+            } else {
+                content += `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Found ${routineResults.length} skincare routine(s) for matching users.
+                    </div>
+                    <div class="table-container">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="fas fa-soap me-2"></i>Cleanser</th>
+                                    <th><i class="fas fa-tint me-2"></i>Toner</th>
+                                    <th><i class="fas fa-flask me-2"></i>Serum</th>
+                                    <th><i class="fas fa-hand-holding-water me-2"></i>Moisturizer</th>
+                                    <th><i class="fas fa-sun me-2"></i>Sunscreen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                routineResults.forEach(routine => {
+                    content += `
+                    <tr>
+                        <td>${routine.Cleanser || '<em class="text-muted">Not specified</em>'}</td>
+                        <td>${routine.Toner || '<em class="text-muted">Not specified</em>'}</td>
+                        <td>${routine.Serum || '<em class="text-muted">Not specified</em>'}</td>
+                        <td>${routine.Moisturizer || '<em class="text-muted">Not specified</em>'}</td>
+                        <td>${routine.Sunscreen || '<em class="text-muted">Not specified</em>'}</td>
+                    </tr>
+                    `;
+                });
+
+                content += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            content += `
+                </div>
+
+                <!-- Action Buttons Section -->
+                <div class="mt-4">
+                    <h5><i class="fas fa-cog me-2"></i>Quick Actions</h5>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+            `;
+            
+            userResults.forEach(user => {
+                content += `
+                    <a href="/skinID?userId=${user.UserID}" class="btn-success-modern btn-modern">
+                        <i class="fas fa-user-circle me-2"></i>View ${user.Name}'s Profile
+                    </a>
+                `;
+            });
+            
+            content += `
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+            `;
+            
+            userResults.forEach(user => {
+                content += `
+                    <a href="/progressID?userId=${user.UserID}" class="btn-info-modern btn-modern">
+                        <i class="fas fa-chart-line me-2"></i>View ${user.Name}'s Progress
+                    </a>
+                `;
+            });
+            
+            content += `
+                    </div>
+                </div>
+
+                <!-- Navigation Section -->
+                <div class="mt-4 text-center">
+                    <a href="/userSearch.html" class="btn-primary-modern btn-modern me-2">
+                        <i class="fas fa-search me-2"></i>New Search
+                    </a>
+                    <a href="/allusers" class="btn-secondary-modern btn-modern">
+                        <i class="fas fa-users me-2"></i>View All Users
+                    </a>
+                </div>
             </div>
             `;
-        }
 
-        content += `
-            <div class="mt-4 text-center">
-                <a href="/productLogs.html" class="btn-primary-modern btn-modern me-2">
-                    <i class="fas fa-search me-2"></i>New Product Search
-                </a>
-                <a href="/allproducts" class="btn-secondary-modern btn-modern">
-                    <i class="fas fa-boxes me-2"></i>View All Products
-                </a>
-            </div>
-        </div>
-        `;
-
-        res.send(getEnhancedHTMLTemplate('Product Search Results', content));
+            res.send(getEnhancedHTMLTemplate('User Search Results', content));
+        });
     });
 };
 
 /**
- * getAllProductLogs - Fetches and displays all products with proper error handling
+ * getAllUsers function (Enhanced) - fetches and displays all users with modern styling
  */
-const getAllProductLogs = (req, res) => {
-    // Fixed SQL query - removed non-existent Join_Date column and fixed column name
-    const query = 'SELECT ProductID, Purpose, ExpDate FROM Product_Logs ORDER BY ExpDate DESC';
+const getAllUsers = (req, res) => {
+    const query = 'SELECT UserID, Name, Email, Join_Date FROM Users ORDER BY Join_Date DESC';
 
     db.query(query, (err, results) => {
         if (err) {
-            console.error("Error fetching all products:", err);
+            console.error("Error fetching all users:", err);
             const errorContent = `
                 <div class="container">
                     <div class="no-results">
                         <i class="fas fa-exclamation-triangle"></i>
                         <h3>Database Error</h3>
-                        <p>Unable to retrieve products at this time.</p>
-                        <a href="/productLogs.html" class="btn-primary-modern btn-modern">
+                        <p>Unable to retrieve users at this time.</p>
+                        <a href="/userSearch.html" class="btn-primary-modern btn-modern">
                             <i class="fas fa-arrow-left me-2"></i>Back to Search
                         </a>
                     </div>
@@ -517,48 +628,48 @@ const getAllProductLogs = (req, res) => {
         // Generate enhanced HTML response
         let content = `
         <div class="container">
-            <h3><i class="fas fa-box me-3"></i>All Product Logs</h3>
+            <h3><i class="fas fa-users me-3"></i>All No Pore Decisions Users</h3>
         `;
 
         if (results.length === 0) {
             content += `
                 <div class="no-results">
-                    <i class="fas fa-box-open"></i>
-                    <h5>No Products Found</h5>
-                    <p>There are currently no products in the database.</p>
+                    <i class="fas fa-user-slash"></i>
+                    <h5>No Users Found</h5>
+                    <p>There are currently no users in the database.</p>
                 </div>
             `;
         } else {
             content += `
             <div class="alert alert-success">
                 <i class="fas fa-info-circle me-2"></i>
-                Displaying ${results.length} product${results.length !== 1 ? 's' : ''}
+                Displaying ${results.length} registered user${results.length !== 1 ? 's' : ''}
             </div>
             <div class="table-container">
                 <table class="table table-striped">
                     <thead class="table-dark">
                         <tr>
-                            <th><i class="fas fa-id-badge me-2"></i>Product ID</th>
-                            <th><i class="fas fa-box me-2"></i>Purpose</th>
-                            <th><i class="fas fa-calendar-alt me-2"></i>Expiration Date</th>
+                            <th><i class="fas fa-user me-2"></i>Name</th>
+                            <th><i class="fas fa-envelope me-2"></i>Email</th>
+                            <th><i class="fas fa-calendar me-2"></i>Join Date</th>
                             <th><i class="fas fa-cog me-2"></i>Action</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
 
-            results.forEach(product => {
+            results.forEach(user => {
                 content += `
                 <tr>
-                    <td><span class="badge">${product.ProductID}</span></td>
-                    <td><strong>${product.Purpose}</strong></td>
-                    <td>${product.ExpDate ? new Date(product.ExpDate).toLocaleDateString('en-US', {
+                    <td><strong>${user.Name}</strong></td>
+                    <td>${user.Email}</td>
+                    <td>${new Date(user.Join_Date).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long', 
                         day: 'numeric'
-                    }) : 'N/A'}</td>
+                    })}</td>
                     <td>
-                        <a href="/product?productName=${encodeURIComponent(product.Purpose)}" class="btn-info-modern btn-modern">
+                        <a href="/user?userName=${encodeURIComponent(user.Name)}" class="btn-info-modern btn-modern">
                             <i class="fas fa-eye me-1"></i>View Details
                         </a>
                     </td>
@@ -575,14 +686,14 @@ const getAllProductLogs = (req, res) => {
 
         content += `
             <div class="text-center">
-                <a href="/productLogs.html" class="btn-primary-modern btn-modern">
+                <a href="/userSearch.html" class="btn-primary-modern btn-modern">
                     <i class="fas fa-arrow-left me-2"></i>Back to Search
                 </a>
             </div>
         </div>
         `;
 
-        res.send(getEnhancedHTMLTemplate('All Products', content));
+        res.send(getEnhancedHTMLTemplate('All Users', content));
     });
 };
 
@@ -590,6 +701,6 @@ const getAllProductLogs = (req, res) => {
  * Module exports the enhanced functions to be used in the routes
  */
 module.exports = {
-    getProductDetails,
-    getAllProductLogs
+    getUserByName,
+    getAllUsers
 };
